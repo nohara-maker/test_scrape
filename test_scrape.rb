@@ -5,12 +5,6 @@ require 'active_support/all'
 
 urls = ["http://fujimasu.com/"]
 
-def check_company_name(company_name)
-  #日本語が含まれているか、空白か確認
-  is_not_acceptable =  "#{company_name}" =~ /(?:\p{Hiragana}|\p{Katakana}|[一-龠々])/ || company_name.empty?
-  return is_not_acceptable
-end
-
 urls.each do |url|
   fd = URI.open(url)
   html = fd.read
