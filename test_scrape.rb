@@ -3,7 +3,7 @@ require 'open-uri'
 require 'nokogiri'
 require 'active_support/all'
 
-urls = ["http://fujimasu.com/"]
+urls = ["https://company.baseconnect.in/"]
 
 urls.each do |url|
   fd = URI.open(url)
@@ -11,7 +11,7 @@ urls.each do |url|
   doc = Nokogiri::HTML.parse(html, nil, 'utf-8')
 
   # All Rights Reservedが含まれている要素がある場合
-  search_condition = "//*[contains(text(), \"All Rights Reserved\")] | //*[contains(text(), \"All rights reserved\")] | //*[contains(text(), \"All Right Reserved\")] | //*[contains(text(), \"All right reserved\")] | //*[contains(text(), \"all rights reserved\")] | //*[contains(text(), \"all right reserved\")]"
+  search_condition = "//*[contains(text(), \"All Rights Reserved\")] | //*[contains(text(), \"All rights reserved\")] | //*[contains(text(), \"All Right Reserved\")] | //*[contains(text(), \"All right reserved\")] | //*[contains(text(), \"all rights reserved\")] | //*[contains(text(), \"all right reserved\")] | //*[contains(text(), \"ALL RIGHTS RESERVED\")]"
   element = doc.xpath("#{search_condition}")
   if element.present?
     text = element.text
@@ -62,7 +62,7 @@ urls.each do |url|
     next if "#{text}" =~ /\u{C2A0}/
 
     # All Rights Reservedが含まれる場合は取得しない
-    next if "#{text}" =~ /all/i && "#{text}" =~ /righ(t|ts)/i && "#{text}" =~ /reserved/i
+    next if "#{text}" =~ /all/i && ("#{text}" =~ /righ(t|ts)/i || "#{text}" =~ /reserved/i)
 
     #Javascriptのコードらしきものが含まれる場合は取得しない
     next if "#{text}" =~ /\=/ || "#{text}" =~ /;/
@@ -94,7 +94,7 @@ urls.each do |url|
     next if "#{text}" =~ /\u{C2A0}/
 
     # All Rights Reservedが含まれる場合は取得しない
-    next if "#{text}" =~ /all/i && "#{text}" =~ /righ(t|ts)/i && "#{text}" =~ /reserved/i
+    next if "#{text}" =~ /all/i && ("#{text}" =~ /righ(t|ts)/i || "#{text}" =~ /reserved/i)
 
     #Javascriptのコードらしきものが含まれる場合は取得しない
     next if "#{text}" =~ /\=/ || "#{text}" =~ /;/
@@ -126,7 +126,7 @@ urls.each do |url|
     next if "#{text}" =~ /\u{C2A0}/
 
     # All Rights Reservedが含まれる場合は取得しない
-    next if "#{text}" =~ /all/i && "#{text}" =~ /righ(t|ts)/i && "#{text}" =~ /reserved/i
+    next if "#{text}" =~ /all/i && ("#{text}" =~ /righ(t|ts)/i || "#{text}" =~ /reserved/i)
 
     #Javascriptのコードらしきものが含まれる場合は取得しない
     next if "#{text}" =~ /\=/ || "#{text}" =~ /;/
@@ -147,5 +147,7 @@ urls.each do |url|
     puts en_company_name.gsub(/　/," ").strip
     next
   end
+  rescue
+    next
 end
 
