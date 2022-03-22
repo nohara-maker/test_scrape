@@ -39,14 +39,14 @@ urls.each do |url|
     en_company_name = c_mark.post_match if c_mark
 
     # 年数が記載されている場合
-    years_number = pre_match_text.match(/(\d{4}(| |　)-(| |　)\d{4})|(\d{4}.)|(\d{4})/)
+    years_number = pre_match_text.match(/(\d{4}(| |　)(-|–|ー)(| |　)\d{4})|(\d{4}.)|(\d{4})/)
     en_company_name = years_number.post_match if years_number
 
     # 日本語が含まれているか確認
     next if "#{en_company_name}" =~ /(?:\p{Hiragana}|\p{Katakana}|[一-龠々])/
 
     # 空白がないか確認
-    next if en_company_name.empty?
+    next if en_company_name.blank?
 
     puts en_company_name.gsub(/　/," ").strip
     next
@@ -71,14 +71,14 @@ urls.each do |url|
     en_company_name = post_match_text
 
     # 年数が記載されている場合
-    years_number = post_match_text.match(/(\d{4}(| |　)-(| |　)\d{4})|(\d{4}.)|(\d{4})/)
+    years_number = post_match_text.match(/(\d{4}(| |　)(-|–|ー)(| |　)\d{4})|(\d{4}.)|(\d{4})/)
     en_company_name = years_number.post_match if years_number
 
     # 日本語が含まれているか確認
     next if "#{en_company_name}" =~ /(?:\p{Hiragana}|\p{Katakana}|[一-龠々])/
 
     # 空白がないか確認
-    next if en_company_name.empty?
+    next if en_company_name.blank?
 
     puts en_company_name.gsub(/　/," ").strip
     next
@@ -103,14 +103,14 @@ urls.each do |url|
     en_company_name = post_match_text
 
     # 年数が記載されている場合
-    years_number = post_match_text.match(/(\d{4}(| |　)-(| |　)\d{4})|(\d{4}.)|(\d{4})/)
+    years_number = post_match_text.match(/(\d{4}(| |　)(-|–|ー)(| |　)\d{4})|(\d{4}.)|(\d{4})/)
     en_company_name = years_number.post_match if years_number
 
     # 日本語が含まれているか確認
     next if "#{en_company_name}" =~ /(?:\p{Hiragana}|\p{Katakana}|[一-龠々])/
 
     # 空白がないか確認
-    next if en_company_name.empty?
+    next if en_company_name.blank?
 
     puts en_company_name.gsub(/　/," ").strip
     next
@@ -135,14 +135,14 @@ urls.each do |url|
     en_company_name = post_match_text
 
     # 年数が記載されている場合
-    years_number = post_match_text.match(/(\d{4}(| |　)-(| |　)\d{4})|(\d{4}.)|(\d{4})/)
+    years_number = post_match_text.match(/(\d{4}(| |　)(-|–|ー)(| |　)\d{4})|(\d{4}.)|(\d{4})/)
     en_company_name = years_number.post_match if years_number
 
     # 日本語が含まれているか確認
     next if "#{en_company_name}" =~ /(?:\p{Hiragana}|\p{Katakana}|[一-龠々])/
 
     # 空白がないか確認
-    next if en_company_name.empty?
+    next if en_company_name.blank?
 
     puts en_company_name.gsub(/　/," ").strip
     next
