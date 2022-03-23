@@ -17,7 +17,7 @@ urls.each do |url|
     text = element.text
 
     #Javascriptのコードらしきものが含まれる場合は取得しない
-    next if "#{text}" =~ /\=/ || "#{text}" =~ /;/
+    next if "#{text}" =~ /\=/ || "#{text}" =~ /;/ || "#{text}" =~ /document./
 
     pre_match_text = text.match(/All Righ(t|ts) Reserved/i)&.pre_match
     en_company_name = pre_match_text
@@ -65,7 +65,7 @@ urls.each do |url|
     next if "#{text}" =~ /all/i && ("#{text}" =~ /righ(t|ts)/i || "#{text}" =~ /reserved/i)
 
     #Javascriptのコードらしきものが含まれる場合は取得しない
-    next if "#{text}" =~ /\=/ || "#{text}" =~ /;/
+    next if "#{text}" =~ /\=/ || "#{text}" =~ /;/ || "#{text}" =~ /document./
 
     post_match_text = text.match(/©/).post_match
     en_company_name = post_match_text
@@ -97,7 +97,7 @@ urls.each do |url|
     next if "#{text}" =~ /all/i && ("#{text}" =~ /righ(t|ts)/i || "#{text}" =~ /reserved/i)
 
     #Javascriptのコードらしきものが含まれる場合は取得しない
-    next if "#{text}" =~ /\=/ || "#{text}" =~ /;/
+    next if "#{text}" =~ /\=/ || "#{text}" =~ /;/ || "#{text}" =~ /document./
 
     post_match_text = text.match(/\(c\)/i).post_match
     en_company_name = post_match_text
@@ -129,7 +129,7 @@ urls.each do |url|
     next if "#{text}" =~ /all/i && ("#{text}" =~ /righ(t|ts)/i || "#{text}" =~ /reserved/i)
 
     #Javascriptのコードらしきものが含まれる場合は取得しない
-    next if "#{text}" =~ /\=/ || "#{text}" =~ /;/
+    next if "#{text}" =~ /\=/ || "#{text}" =~ /;/ || "#{text}" =~ /document./
 
     post_match_text = text.match(/copyright/i).post_match
     en_company_name = post_match_text
