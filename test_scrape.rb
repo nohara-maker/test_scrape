@@ -3,7 +3,7 @@ require 'open-uri'
 require 'nokogiri'
 require 'active_support/all'
 
-urls = ["https://company.baseconnect.in/"]
+urls = ["https://www.nichiryoku.co.jp/"]
 
 urls.each do |url|
   fd = URI.open(url)
@@ -74,6 +74,10 @@ urls.each do |url|
     years_number = post_match_text.match(/(\d{4}(| |　)(-|–|ー)(| |　)\d{4})|(\d{4}.)|(\d{4})/)
     en_company_name = years_number.post_match if years_number
 
+    # 会社名を重複して取得している場合
+    copyright_mark = en_company_name.match(/©/)
+    en_company_name = copyright_mark.pre_match if copyright_mark
+
     # 日本語が含まれているか確認
     next if "#{en_company_name}" =~ /(?:\p{Hiragana}|\p{Katakana}|[一-龠々])/
 
@@ -106,6 +110,10 @@ urls.each do |url|
     years_number = post_match_text.match(/(\d{4}(| |　)(-|–|ー)(| |　)\d{4})|(\d{4}.)|(\d{4})/)
     en_company_name = years_number.post_match if years_number
 
+    # 会社名を重複して取得している場合
+    bracket_c_mark = en_company_name.match(/\(c\)/i)
+    en_company_name = bracket_c_mark.post_match if bracket_c_mark
+
     # 日本語が含まれているか確認
     next if "#{en_company_name}" =~ /(?:\p{Hiragana}|\p{Katakana}|[一-龠々])/
 
@@ -137,6 +145,10 @@ urls.each do |url|
     # 年数が記載されている場合
     years_number = post_match_text.match(/(\d{4}(| |　)(-|–|ー)(| |　)\d{4})|(\d{4}.)|(\d{4})/)
     en_company_name = years_number.post_match if years_number
+
+    # 会社名を重複して取得している場合
+    copyright_text = en_company_name.match(/copyright/i)
+    en_company_name = copyright_text.post_match if copyright_text
 
     # 日本語が含まれているか確認
     next if "#{en_company_name}" =~ /(?:\p{Hiragana}|\p{Katakana}|[一-龠々])/
