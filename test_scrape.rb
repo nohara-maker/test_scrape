@@ -3,7 +3,7 @@ require 'open-uri'
 require 'nokogiri'
 require 'active_support/all'
 
-urls = ["http://addrec.co.jp/"]
+urls = ["https://www.showaglove.co.jp/asia/"]
 
 urls.each do |url|
   fd = URI.open(url)
@@ -31,7 +31,7 @@ urls.each do |url|
     en_company_name = copyright_mark.post_match if copyright_mark
 
     # (c)が記載されている場合
-    bracket_c_mark = en_company_name.match(/\(c\)/i)
+    bracket_c_mark = en_company_name.match(/\(c\) |（C）/i)
     en_company_name = bracket_c_mark.post_match if bracket_c_mark
 
     # cが記載されている場合
@@ -103,7 +103,7 @@ urls.each do |url|
     #Javascriptのコードらしきものが含まれる場合は取得しない
     next if "#{text}" =~ /\=/ || "#{text}" =~ /;/ || "#{text}" =~ /document./
 
-    post_match_text = text.match(/\(c\)/i).post_match
+    post_match_text = text.match(/\(c\) |（C）/i).post_match
     en_company_name = post_match_text
 
     # 年数が記載されている場合
@@ -111,7 +111,7 @@ urls.each do |url|
     en_company_name = years_number.post_match if years_number
 
     # 会社名を重複して取得している場合
-    bracket_c_mark = en_company_name.match(/\(c\)/i)
+    bracket_c_mark = en_company_name.match(/\(c\) |（C）/i)
     en_company_name = bracket_c_mark.post_match if bracket_c_mark
 
     # 日本語が含まれているか確認
