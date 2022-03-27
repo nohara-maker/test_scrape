@@ -6,12 +6,11 @@ require 'timeout'
 require 'active_support/all'
 
 data_list = CSV.read('sample.csv')
-
-CSV.open('sample1.csv', 'w', encoding: 'Shift_JIS:UTF-8') do |csv|
-  csv << ["c.uuid", "c.name", "c.name_en", "c.web_site"]
+bom = "\uFEFF"
+csv_file = CSV.generate(bom, :force_quotes => true) do |csv|
   data_list.each_with_index do |row, i|
     next unless row[3]
-    Timeout.timeout(1) do
+    Timeout.timeout(5) do
       fd = URI.open(row[3])
       html = fd.read
       doc = Nokogiri::HTML.parse(html, nil, 'utf-8')
@@ -23,7 +22,10 @@ CSV.open('sample1.csv', 'w', encoding: 'Shift_JIS:UTF-8') do |csv|
         text = element.text
 
         #Javascriptのコードらしきものが含まれる場合は取得しない
-        next if "#{text}" =~ /\=/ || "#{text}" =~ /;/ || "#{text}" =~ /document./
+        if "#{text}" =~ /\=|;|document./
+          csv << [row[0], row[1], nil, row[3]]
+          next
+        end
 
         pre_match_text = text.match(/All Righ(t|ts) Reserved/i)&.pre_match
         en_company_name = pre_match_text
@@ -49,7 +51,10 @@ CSV.open('sample1.csv', 'w', encoding: 'Shift_JIS:UTF-8') do |csv|
         en_company_name = years_number.post_match if years_number
 
         # 日本語・その他文字が含まれているか確認
-        next if "#{en_company_name}" =~ /(?:\p{Hiragana}|\p{Katakana}|[一-龠々])|\|/ || en_company_name.blank?
+        if "#{en_company_name}" =~ /(?:\p{Hiragana}|\p{Katakana}|[一-龠々])|\|/ || en_company_name.blank?
+          csv << [row[0], row[1], nil, row[3]]
+          next
+        end
 
         csv << [row[0], row[1], en_company_name, row[3]]
         next
@@ -62,13 +67,16 @@ CSV.open('sample1.csv', 'w', encoding: 'Shift_JIS:UTF-8') do |csv|
         text = element.text
 
         # &nbspが含まれる場合は取得しない
-        next if "#{text}" =~ /\u{C2A0}/
+        if "#{text}" =~ /\u{C2A0}|\=|;|document./ || "#{text}" =~ /all/i && ("#{text}" =~ /righ(t|ts)/i || "#{text}" =~ /reserved/i)
+          csv << [row[0], row[1], nil, row[3]]
+          next
+        end
 
-        # All Rights Reservedが含まれる場合は取得しない
-        next if "#{text}" =~ /all/i && ("#{text}" =~ /righ(t|ts)/i || "#{text}" =~ /reserved/i)
+        # # All Rights Reservedが含まれる場合は取得しない
+        # next if "#{text}" =~ /all/i && ("#{text}" =~ /righ(t|ts)/i || "#{text}" =~ /reserved/i)
 
-        #Javascriptのコードらしきものが含まれる場合は取得しない
-        next if "#{text}" =~ /\=/ || "#{text}" =~ /;/ || "#{text}" =~ /document./
+        # #Javascriptのコードらしきものが含まれる場合は取得しない
+        # next if "#{text}" =~ /\=/ || "#{text}" =~ /;/ || "#{text}" =~ /document./
 
         post_match_text = text.match(/©/).post_match
         en_company_name = post_match_text
@@ -82,7 +90,10 @@ CSV.open('sample1.csv', 'w', encoding: 'Shift_JIS:UTF-8') do |csv|
         en_company_name = copyright_mark.pre_match if copyright_mark
 
         # 日本語・その他文字が含まれているか確認
-        next if "#{en_company_name}" =~ /(?:\p{Hiragana}|\p{Katakana}|[一-龠々])|\|/ || en_company_name.blank?
+        if "#{en_company_name}" =~ /(?:\p{Hiragana}|\p{Katakana}|[一-龠々])|\|/ || en_company_name.blank?
+          csv << [row[0], row[1], nil, row[3]]
+          next
+        end
 
         csv << [row[0], row[1], en_company_name, row[3]]
         next
@@ -95,15 +106,18 @@ CSV.open('sample1.csv', 'w', encoding: 'Shift_JIS:UTF-8') do |csv|
         text = element.text
 
         # &nbspが含まれる場合は取得しない
-        next if "#{text}" =~ /\u{C2A0}/
+        if "#{text}" =~ /\u{C2A0}|\=|;|document./ || "#{text}" =~ /all/i && ("#{text}" =~ /righ(t|ts)/i || "#{text}" =~ /reserved/i)
+          csv << [row[0], row[1], nil, row[3]]
+          next
+        end
 
-        # All Rights Reservedが含まれる場合は取得しない
-        next if "#{text}" =~ /all/i && ("#{text}" =~ /righ(t|ts)/i || "#{text}" =~ /reserved/i)
+        # # All Rights Reservedが含まれる場合は取得しない
+        # next if "#{text}" =~ /all/i && ("#{text}" =~ /righ(t|ts)/i || "#{text}" =~ /reserved/i)
 
-        #Javascriptのコードらしきものが含まれる場合は取得しない
-        next if "#{text}" =~ /\=/ || "#{text}" =~ /;/ || "#{text}" =~ /document./
+        # #Javascriptのコードらしきものが含まれる場合は取得しない
+        # next if "#{text}" =~ /\=/ || "#{text}" =~ /;/ || "#{text}" =~ /document./
 
-        post_match_text = text.match(/\(c\) |（C）/i).post_match
+        post_match_text = text.match(/\(c\)|（C）/i).post_match
         en_company_name = post_match_text
 
         # 年数が記載されている場合
@@ -115,7 +129,10 @@ CSV.open('sample1.csv', 'w', encoding: 'Shift_JIS:UTF-8') do |csv|
         en_company_name = bracket_c_mark.post_match if bracket_c_mark
 
         # 日本語・その他文字が含まれているか確認
-        next if "#{en_company_name}" =~ /(?:\p{Hiragana}|\p{Katakana}|[一-龠々])|\|/ ||　en_company_name.blank?
+        if "#{en_company_name}" =~ /(?:\p{Hiragana}|\p{Katakana}|[一-龠々])|\|/ || en_company_name.blank?
+          csv << [row[0], row[1], nil, row[3]]
+          next
+        end
 
         csv << [row[0], row[1], en_company_name, row[3]]
         next
@@ -128,13 +145,16 @@ CSV.open('sample1.csv', 'w', encoding: 'Shift_JIS:UTF-8') do |csv|
         text = element.text
 
         # &nbspが含まれる場合は取得しない
-        next if "#{text}" =~ /\u{C2A0}/
+        if "#{text}" =~ /\u{C2A0}|\=|;|document./ || "#{text}" =~ /all/i && ("#{text}" =~ /righ(t|ts)/i || "#{text}" =~ /reserved/i)
+          csv << [row[0], row[1], nil, row[3]]
+          next
+        end
 
-        # All Rights Reservedが含まれる場合は取得しない
-        next if "#{text}" =~ /all/i && ("#{text}" =~ /righ(t|ts)/i || "#{text}" =~ /reserved/i)
+        # # All Rights Reservedが含まれる場合は取得しない
+        # next if "#{text}" =~ /all/i && ("#{text}" =~ /righ(t|ts)/i || "#{text}" =~ /reserved/i)
 
-        #Javascriptのコードらしきものが含まれる場合は取得しない
-        next if "#{text}" =~ /\=/ || "#{text}" =~ /;/ || "#{text}" =~ /document./
+        # #Javascriptのコードらしきものが含まれる場合は取得しない
+        # next if "#{text}" =~ /\=/ || "#{text}" =~ /;/ || "#{text}" =~ /document./
 
         post_match_text = text.match(/copyright/i).post_match
         en_company_name = post_match_text
@@ -148,15 +168,24 @@ CSV.open('sample1.csv', 'w', encoding: 'Shift_JIS:UTF-8') do |csv|
         en_company_name = copyright_text.post_match if copyright_text
 
         # 日本語・その他文字が含まれているか確認
-        next if "#{en_company_name}" =~ /(?:\p{Hiragana}|\p{Katakana}|[一-龠々])|\|/ || en_company_name.blank?
+        if "#{en_company_name}" =~ /(?:\p{Hiragana}|\p{Katakana}|[一-龠々])|\|/ || en_company_name.blank?
+          csv << [row[0], row[1], nil, row[3]]
+          next
+        end
 
         csv << [row[0], row[1], en_company_name, row[3]]
         next
       end
+      csv << [row[0], row[1], nil, row[3]]
     end
     rescue => e
       p "#{i+1} #{row[1]}"
       p e
+      csv << [row[0], row[1], nil, row[3]]
       next
   end
+end
+
+File.open("test1.csv", "w") do |file|
+  file.write(csv_file)
 end
