@@ -10,7 +10,7 @@ bom = "\uFEFF"
 csv_file = CSV.generate(bom, :force_quotes => true) do |csv|
   data_list.each_with_index do |row, i|
     next unless row[3]
-    Timeout.timeout(5) do
+    Timeout.timeout(10) do
       fd = URI.open(row[3])
       html = fd.read
       doc = Nokogiri::HTML.parse(html, nil, 'utf-8')
@@ -66,17 +66,11 @@ csv_file = CSV.generate(bom, :force_quotes => true) do |csv|
       if element.present?
         text = element.text
 
-        # &nbspが含まれる場合は取得しない
+        # &nbsp, All Rights Reserved, JSのコードらしきものが含まれる場合は取得しない
         if "#{text}" =~ /\u{C2A0}|\=|;|document./ || "#{text}" =~ /all/i && ("#{text}" =~ /righ(t|ts)/i || "#{text}" =~ /reserved/i)
           csv << [row[0], row[1], nil, row[3]]
           next
         end
-
-        # # All Rights Reservedが含まれる場合は取得しない
-        # next if "#{text}" =~ /all/i && ("#{text}" =~ /righ(t|ts)/i || "#{text}" =~ /reserved/i)
-
-        # #Javascriptのコードらしきものが含まれる場合は取得しない
-        # next if "#{text}" =~ /\=/ || "#{text}" =~ /;/ || "#{text}" =~ /document./
 
         post_match_text = text.match(/©/).post_match
         en_company_name = post_match_text
@@ -105,17 +99,11 @@ csv_file = CSV.generate(bom, :force_quotes => true) do |csv|
       if element.present?
         text = element.text
 
-        # &nbspが含まれる場合は取得しない
+        # &nbsp, All Rights Reserved, JSのコードらしきものが含まれる場合は取得しない
         if "#{text}" =~ /\u{C2A0}|\=|;|document./ || "#{text}" =~ /all/i && ("#{text}" =~ /righ(t|ts)/i || "#{text}" =~ /reserved/i)
           csv << [row[0], row[1], nil, row[3]]
           next
         end
-
-        # # All Rights Reservedが含まれる場合は取得しない
-        # next if "#{text}" =~ /all/i && ("#{text}" =~ /righ(t|ts)/i || "#{text}" =~ /reserved/i)
-
-        # #Javascriptのコードらしきものが含まれる場合は取得しない
-        # next if "#{text}" =~ /\=/ || "#{text}" =~ /;/ || "#{text}" =~ /document./
 
         post_match_text = text.match(/\(c\)|（C）/i).post_match
         en_company_name = post_match_text
@@ -144,17 +132,11 @@ csv_file = CSV.generate(bom, :force_quotes => true) do |csv|
       if element.present?
         text = element.text
 
-        # &nbspが含まれる場合は取得しない
+        # &nbsp, All Rights Reserved, JSのコードらしきものが含まれる場合は取得しない
         if "#{text}" =~ /\u{C2A0}|\=|;|document./ || "#{text}" =~ /all/i && ("#{text}" =~ /righ(t|ts)/i || "#{text}" =~ /reserved/i)
           csv << [row[0], row[1], nil, row[3]]
           next
         end
-
-        # # All Rights Reservedが含まれる場合は取得しない
-        # next if "#{text}" =~ /all/i && ("#{text}" =~ /righ(t|ts)/i || "#{text}" =~ /reserved/i)
-
-        # #Javascriptのコードらしきものが含まれる場合は取得しない
-        # next if "#{text}" =~ /\=/ || "#{text}" =~ /;/ || "#{text}" =~ /document./
 
         post_match_text = text.match(/copyright/i).post_match
         en_company_name = post_match_text
