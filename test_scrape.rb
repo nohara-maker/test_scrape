@@ -5,165 +5,158 @@ require 'csv'
 require 'timeout'
 require 'active_support/all'
 
-CSV.foreach("sample.csv") do |row|
-  next unless row[3]
-  Timeout.timeout(1) do
-    fd = URI.open(row[3])
-    html = fd.read
-    doc = Nokogiri::HTML.parse(html, nil, 'utf-8')
+data_list = CSV.read('sample.csv')
 
-    # All Rights Reservedが含まれている要素がある場合
-    search_condition = "//*[contains(text(), \"All Rights Reserved\")] | //*[contains(text(), \"All rights reserved\")] | //*[contains(text(), \"All Right Reserved\")] | //*[contains(text(), \"All right reserved\")] | //*[contains(text(), \"all rights reserved\")] | //*[contains(text(), \"all right reserved\")] | //*[contains(text(), \"ALL RIGHTS RESERVED\")]"
-    element = doc.xpath("#{search_condition}")
-    if element.present?
-      text = element.text
+CSV.open('sample1.csv', 'w', encoding: 'Shift_JIS:UTF-8') do |csv|
+  csv << ["c.uuid", "c.name", "c.name_en", "c.web_site"]
+  data_list.each_with_index do |row, i|
+    next unless row[3]
+    Timeout.timeout(1) do
+      fd = URI.open(row[3])
+      html = fd.read
+      doc = Nokogiri::HTML.parse(html, nil, 'utf-8')
 
-      #Javascriptのコードらしきものが含まれる場合は取得しない
-      next if "#{text}" =~ /\=/ || "#{text}" =~ /;/ || "#{text}" =~ /document./
+      # All Rights Reservedが含まれている要素がある場合
+      search_condition = "//*[contains(text(), \"All Rights Reserved\")] | //*[contains(text(), \"All rights reserved\")] | //*[contains(text(), \"All Right Reserved\")] | //*[contains(text(), \"All right reserved\")] | //*[contains(text(), \"all rights reserved\")] | //*[contains(text(), \"all right reserved\")] | //*[contains(text(), \"ALL RIGHTS RESERVED\")]"
+      element = doc.xpath("#{search_condition}")
+      if element.present?
+        text = element.text
 
-      pre_match_text = text.match(/All Righ(t|ts) Reserved/i)&.pre_match
-      en_company_name = pre_match_text
+        #Javascriptのコードらしきものが含まれる場合は取得しない
+        next if "#{text}" =~ /\=/ || "#{text}" =~ /;/ || "#{text}" =~ /document./
 
-      # copyrightが記載されている場合
-      copyright_text = en_company_name.match(/copyright/i)
-      en_company_name = copyright_text.post_match if copyright_text
+        pre_match_text = text.match(/All Righ(t|ts) Reserved/i)&.pre_match
+        en_company_name = pre_match_text
 
-      # ©が記載されている場合
-      copyright_mark = en_company_name.match(/©/)
-      en_company_name = copyright_mark.post_match if copyright_mark
+        # copyrightが記載されている場合
+        copyright_text = en_company_name.match(/copyright/i)
+        en_company_name = copyright_text.post_match if copyright_text
 
-      # (c)が記載されている場合
-      bracket_c_mark = en_company_name.match(/\(c\) |（C）/i)
-      en_company_name = bracket_c_mark.post_match if bracket_c_mark
+        # ©が記載されている場合
+        copyright_mark = en_company_name.match(/©/)
+        en_company_name = copyright_mark.post_match if copyright_mark
 
-      # cが記載されている場合
-      c_mark = en_company_name.match(/( |　)c( |　)/i)
-      en_company_name = c_mark.post_match if c_mark
+        # (c)が記載されている場合
+        bracket_c_mark = en_company_name.match(/\(c\) |（C）/i)
+        en_company_name = bracket_c_mark.post_match if bracket_c_mark
 
-      # 年数が記載されている場合
-      years_number = en_company_name.match(/(\d{4}(| |　)(-|–|ー)(| |　)\d{4})|(\d{4}.)|(\d{4})/)
-      en_company_name = years_number.post_match if years_number
+        # cが記載されている場合
+        c_mark = en_company_name.match(/( |　)c( |　)/i)
+        en_company_name = c_mark.post_match if c_mark
 
-      # 日本語・その他文字が含まれているか確認
-      next if "#{en_company_name}" =~ /(?:\p{Hiragana}|\p{Katakana}|[一-龠々]|\|)/
+        # 年数が記載されている場合
+        years_number = en_company_name.match(/(\d{4}(| |　)(-|–|ー)(| |　)\d{4})|(\d{4}.)|(\d{4})/)
+        en_company_name = years_number.post_match if years_number
 
-      # 空白がないか確認
-      next if en_company_name.blank?
+        # 日本語・その他文字が含まれているか確認
+        next if "#{en_company_name}" =~ /(?:\p{Hiragana}|\p{Katakana}|[一-龠々])|\|/ || en_company_name.blank?
 
-      puts en_company_name.gsub(/　/," ").strip
-      next
+        csv << [row[0], row[1], en_company_name, row[3]]
+        next
+      end
+
+      # ©が含まれている要素がある場合
+      search_condition = "//*[contains(text(), \"©\")]"
+      element = doc.xpath("#{search_condition}")
+      if element.present?
+        text = element.text
+
+        # &nbspが含まれる場合は取得しない
+        next if "#{text}" =~ /\u{C2A0}/
+
+        # All Rights Reservedが含まれる場合は取得しない
+        next if "#{text}" =~ /all/i && ("#{text}" =~ /righ(t|ts)/i || "#{text}" =~ /reserved/i)
+
+        #Javascriptのコードらしきものが含まれる場合は取得しない
+        next if "#{text}" =~ /\=/ || "#{text}" =~ /;/ || "#{text}" =~ /document./
+
+        post_match_text = text.match(/©/).post_match
+        en_company_name = post_match_text
+
+        # 年数が記載されている場合
+        years_number = en_company_name.match(/(\d{4}(| |　)(-|–|ー)(| |　)\d{4})|(\d{4}.)|(\d{4})/)
+        en_company_name = years_number.post_match if years_number
+
+        # 会社名を重複して取得している場合
+        copyright_mark = en_company_name.match(/©/)
+        en_company_name = copyright_mark.pre_match if copyright_mark
+
+        # 日本語・その他文字が含まれているか確認
+        next if "#{en_company_name}" =~ /(?:\p{Hiragana}|\p{Katakana}|[一-龠々])|\|/ || en_company_name.blank?
+
+        csv << [row[0], row[1], en_company_name, row[3]]
+        next
+      end
+
+      # (c)が含まれている要素がある場合
+      search_condition = "//*[contains(text(), \"(c)\")] | //*[contains(text(), \"(C)\")]"
+      element = doc.xpath("#{search_condition}")
+      if element.present?
+        text = element.text
+
+        # &nbspが含まれる場合は取得しない
+        next if "#{text}" =~ /\u{C2A0}/
+
+        # All Rights Reservedが含まれる場合は取得しない
+        next if "#{text}" =~ /all/i && ("#{text}" =~ /righ(t|ts)/i || "#{text}" =~ /reserved/i)
+
+        #Javascriptのコードらしきものが含まれる場合は取得しない
+        next if "#{text}" =~ /\=/ || "#{text}" =~ /;/ || "#{text}" =~ /document./
+
+        post_match_text = text.match(/\(c\) |（C）/i).post_match
+        en_company_name = post_match_text
+
+        # 年数が記載されている場合
+        years_number = en_company_name.match(/(\d{4}(| |　)(-|–|ー)(| |　)\d{4})|(\d{4}.)|(\d{4})/)
+        en_company_name = years_number.post_match if years_number
+
+        # 会社名を重複して取得している場合
+        bracket_c_mark = en_company_name.match(/\(c\) |（C）/i)
+        en_company_name = bracket_c_mark.post_match if bracket_c_mark
+
+        # 日本語・その他文字が含まれているか確認
+        next if "#{en_company_name}" =~ /(?:\p{Hiragana}|\p{Katakana}|[一-龠々])|\|/ ||　en_company_name.blank?
+
+        csv << [row[0], row[1], en_company_name, row[3]]
+        next
+      end
+
+      # copyrightが含まれている要素がある場合
+      search_condition = "//*[contains(text(), \"Copyright\")] | //*[contains(text(), \"copyright\")]"
+      element = doc.xpath("#{search_condition}")
+      if element.present?
+        text = element.text
+
+        # &nbspが含まれる場合は取得しない
+        next if "#{text}" =~ /\u{C2A0}/
+
+        # All Rights Reservedが含まれる場合は取得しない
+        next if "#{text}" =~ /all/i && ("#{text}" =~ /righ(t|ts)/i || "#{text}" =~ /reserved/i)
+
+        #Javascriptのコードらしきものが含まれる場合は取得しない
+        next if "#{text}" =~ /\=/ || "#{text}" =~ /;/ || "#{text}" =~ /document./
+
+        post_match_text = text.match(/copyright/i).post_match
+        en_company_name = post_match_text
+
+        # 年数が記載されている場合
+        years_number = en_company_name.match(/(\d{4}(| |　)(-|–|ー)(| |　)\d{4})|(\d{4}.)|(\d{4})/)
+        en_company_name = years_number.post_match if years_number
+
+        # 会社名を重複して取得している場合
+        copyright_text = en_company_name.match(/copyright/i)
+        en_company_name = copyright_text.post_match if copyright_text
+
+        # 日本語・その他文字が含まれているか確認
+        next if "#{en_company_name}" =~ /(?:\p{Hiragana}|\p{Katakana}|[一-龠々])|\|/ || en_company_name.blank?
+
+        csv << [row[0], row[1], en_company_name, row[3]]
+        next
+      end
     end
-
-    # ©が含まれている要素がある場合
-    search_condition = "//*[contains(text(), \"©\")]"
-    element = doc.xpath("#{search_condition}")
-    if element.present?
-      text = element.text
-
-      # &nbspが含まれる場合は取得しない
-      next if "#{text}" =~ /\u{C2A0}/
-
-      # All Rights Reservedが含まれる場合は取得しない
-      next if "#{text}" =~ /all/i && ("#{text}" =~ /righ(t|ts)/i || "#{text}" =~ /reserved/i)
-
-      #Javascriptのコードらしきものが含まれる場合は取得しない
-      next if "#{text}" =~ /\=/ || "#{text}" =~ /;/ || "#{text}" =~ /document./
-
-      post_match_text = text.match(/©/).post_match
-      en_company_name = post_match_text
-
-      # 年数が記載されている場合
-      years_number = en_company_name.match(/(\d{4}(| |　)(-|–|ー)(| |　)\d{4})|(\d{4}.)|(\d{4})/)
-      en_company_name = years_number.post_match if years_number
-
-      # 会社名を重複して取得している場合
-      copyright_mark = en_company_name.match(/©/)
-      en_company_name = copyright_mark.pre_match if copyright_mark
-
-      # 日本語・その他文字が含まれているか確認
-      next if "#{en_company_name}" =~ /(?:\p{Hiragana}|\p{Katakana}|[一-龠々]|\|)/
-
-      # 空白がないか確認
-      next if en_company_name.blank?
-
-      puts en_company_name.gsub(/　/," ").strip
+    rescue => e
+      p "#{i+1} #{row[1]}"
+      p e
       next
-    end
-
-    # (c)が含まれている要素がある場合
-    search_condition = "//*[contains(text(), \"(c)\")] | //*[contains(text(), \"(C)\")]"
-    element = doc.xpath("#{search_condition}")
-    if element.present?
-      text = element.text
-
-      # &nbspが含まれる場合は取得しない
-      next if "#{text}" =~ /\u{C2A0}/
-
-      # All Rights Reservedが含まれる場合は取得しない
-      next if "#{text}" =~ /all/i && ("#{text}" =~ /righ(t|ts)/i || "#{text}" =~ /reserved/i)
-
-      #Javascriptのコードらしきものが含まれる場合は取得しない
-      next if "#{text}" =~ /\=/ || "#{text}" =~ /;/ || "#{text}" =~ /document./
-
-      post_match_text = text.match(/\(c\) |（C）/i).post_match
-      en_company_name = post_match_text
-
-      # 年数が記載されている場合
-      years_number = en_company_name.match(/(\d{4}(| |　)(-|–|ー)(| |　)\d{4})|(\d{4}.)|(\d{4})/)
-      en_company_name = years_number.post_match if years_number
-
-      # 会社名を重複して取得している場合
-      bracket_c_mark = en_company_name.match(/\(c\) |（C）/i)
-      en_company_name = bracket_c_mark.post_match if bracket_c_mark
-
-      # 日本語・その他文字が含まれているか確認
-      next if "#{en_company_name}" =~ /(?:\p{Hiragana}|\p{Katakana}|[一-龠々]|\|)/
-
-      # 空白がないか確認
-      next if en_company_name.blank?
-
-      puts en_company_name.gsub(/　/," ").strip
-      next
-    end
-
-    # copyrightが含まれている要素がある場合
-    search_condition = "//*[contains(text(), \"Copyright\")] | //*[contains(text(), \"copyright\")]"
-    element = doc.xpath("#{search_condition}")
-    if element.present?
-      text = element.text
-
-      # &nbspが含まれる場合は取得しない
-      next if "#{text}" =~ /\u{C2A0}/
-
-      # All Rights Reservedが含まれる場合は取得しない
-      next if "#{text}" =~ /all/i && ("#{text}" =~ /righ(t|ts)/i || "#{text}" =~ /reserved/i)
-
-      #Javascriptのコードらしきものが含まれる場合は取得しない
-      next if "#{text}" =~ /\=/ || "#{text}" =~ /;/ || "#{text}" =~ /document./
-
-      post_match_text = text.match(/copyright/i).post_match
-      en_company_name = post_match_text
-
-      # 年数が記載されている場合
-      years_number = en_company_name.match(/(\d{4}(| |　)(-|–|ー)(| |　)\d{4})|(\d{4}.)|(\d{4})/)
-      en_company_name = years_number.post_match if years_number
-
-      # 会社名を重複して取得している場合
-      copyright_text = en_company_name.match(/copyright/i)
-      en_company_name = copyright_text.post_match if copyright_text
-
-      # 日本語・その他文字が含まれているか確認
-      next if "#{en_company_name}" =~ /(?:\p{Hiragana}|\p{Katakana}|[一-龠々]|\|)/
-
-      # 空白がないか確認
-      next if en_company_name.blank?
-
-      puts en_company_name.gsub(/　/," ").strip
-      next
-    end
   end
-  rescue => e
-    puts row[1]
-    puts e
-    next
 end
