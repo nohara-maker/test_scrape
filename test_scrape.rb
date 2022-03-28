@@ -3,17 +3,22 @@ require 'open-uri'
 require 'nokogiri'
 require 'csv'
 require 'timeout'
+require 'charlock_holmes'
+require 'kconv'
 require 'active_support/all'
 
-data_list = CSV.read('sample.csv')
+# data_list = CSV.read('hogehoge.csv')
 bom = "\uFEFF"
+path = 'master.csv'
+detection = CharlockHolmes::EncodingDetector.detect(File.read(path))
+encoding = detection[:encoding] == 'Shift_JIS' ? 'CP932' : detection[:encoding]
 csv_file = CSV.generate(bom, :force_quotes => true) do |csv|
-  data_list.each_with_index do |row, i|
-    next unless row[3]
+  CSV.foreach(path, encoding: "#{encoding}:UTF-8", headers: true) do |row|
+    next unless row[4]
     Timeout.timeout(10) do
-      fd = URI.open(row[3])
+      fd = URI.open(row[4], "r:binary")
       html = fd.read
-      doc = Nokogiri::HTML.parse(html, nil, 'utf-8')
+      doc = Nokogiri::HTML.parse(html.toutf8, nil, 'utf-8')
 
       # All Rights Reservedが含まれている要素がある場合
       search_condition = "//*[contains(text(), \"All Rights Reserved\")] | //*[contains(text(), \"All rights reserved\")] | //*[contains(text(), \"All Right Reserved\")] | //*[contains(text(), \"All right reserved\")] | //*[contains(text(), \"all rights reserved\")] | //*[contains(text(), \"all right reserved\")] | //*[contains(text(), \"ALL RIGHTS RESERVED\")]"
@@ -23,7 +28,7 @@ csv_file = CSV.generate(bom, :force_quotes => true) do |csv|
 
         #Javascriptのコードらしきものが含まれる場合は取得しない
         if "#{text}" =~ /\=|;|document./
-          csv << [row[0], row[1], nil, row[3]]
+          csv << [row[0], nil]
           next
         end
 
@@ -47,16 +52,16 @@ csv_file = CSV.generate(bom, :force_quotes => true) do |csv|
         en_company_name = c_mark.post_match if c_mark
 
         # 年数が記載されている場合
-        years_number = en_company_name.match(/(\d{4}(| |　)(-|–|ー)(| |　)\d{4})|(\d{4}.)|(\d{4})/)
+        years_number = en_company_name.match(/(\d{4}(| |　)(-|–|ー)(| |　)\d{4}.)|(\d{4}(| |　)(-|–|ー)(| |　)\d{4})|(\d{4}.)|(\d{4})/)
         en_company_name = years_number.post_match if years_number
 
         # 日本語・その他文字が含まれているか確認
         if "#{en_company_name}" =~ /(?:\p{Hiragana}|\p{Katakana}|[一-龠々])|\|/ || en_company_name.blank?
-          csv << [row[0], row[1], nil, row[3]]
+          csv << [row[0], nil]
           next
         end
 
-        csv << [row[0], row[1], en_company_name, row[3]]
+        csv << [row[0], en_company_name]
         next
       end
 
@@ -68,7 +73,7 @@ csv_file = CSV.generate(bom, :force_quotes => true) do |csv|
 
         # &nbsp, All Rights Reserved, JSのコードらしきものが含まれる場合は取得しない
         if "#{text}" =~ /\u{C2A0}|\=|;|document./ || "#{text}" =~ /all/i && ("#{text}" =~ /righ(t|ts)/i || "#{text}" =~ /reserved/i)
-          csv << [row[0], row[1], nil, row[3]]
+          csv << [row[0], nil]
           next
         end
 
@@ -76,7 +81,7 @@ csv_file = CSV.generate(bom, :force_quotes => true) do |csv|
         en_company_name = post_match_text
 
         # 年数が記載されている場合
-        years_number = en_company_name.match(/(\d{4}(| |　)(-|–|ー)(| |　)\d{4})|(\d{4}.)|(\d{4})/)
+        years_number = en_company_name.match(/(\d{4}(| |　)(-|–|ー)(| |　)\d{4}.)|(\d{4}(| |　)(-|–|ー)(| |　)\d{4})|(\d{4}.)|(\d{4})/)
         en_company_name = years_number.post_match if years_number
 
         # 会社名を重複して取得している場合
@@ -85,11 +90,11 @@ csv_file = CSV.generate(bom, :force_quotes => true) do |csv|
 
         # 日本語・その他文字が含まれているか確認
         if "#{en_company_name}" =~ /(?:\p{Hiragana}|\p{Katakana}|[一-龠々])|\|/ || en_company_name.blank?
-          csv << [row[0], row[1], nil, row[3]]
+          csv << [row[0], nil]
           next
         end
 
-        csv << [row[0], row[1], en_company_name, row[3]]
+        csv << [row[0], en_company_name]
         next
       end
 
@@ -101,7 +106,7 @@ csv_file = CSV.generate(bom, :force_quotes => true) do |csv|
 
         # &nbsp, All Rights Reserved, JSのコードらしきものが含まれる場合は取得しない
         if "#{text}" =~ /\u{C2A0}|\=|;|document./ || "#{text}" =~ /all/i && ("#{text}" =~ /righ(t|ts)/i || "#{text}" =~ /reserved/i)
-          csv << [row[0], row[1], nil, row[3]]
+          csv << [row[0], nil]
           next
         end
 
@@ -109,7 +114,7 @@ csv_file = CSV.generate(bom, :force_quotes => true) do |csv|
         en_company_name = post_match_text
 
         # 年数が記載されている場合
-        years_number = en_company_name.match(/(\d{4}(| |　)(-|–|ー)(| |　)\d{4})|(\d{4}.)|(\d{4})/)
+        years_number = en_company_name.match(/(\d{4}(| |　)(-|–|ー)(| |　)\d{4}.)|(\d{4}(| |　)(-|–|ー)(| |　)\d{4})|(\d{4}.)|(\d{4})/)
         en_company_name = years_number.post_match if years_number
 
         # 会社名を重複して取得している場合
@@ -118,11 +123,11 @@ csv_file = CSV.generate(bom, :force_quotes => true) do |csv|
 
         # 日本語・その他文字が含まれているか確認
         if "#{en_company_name}" =~ /(?:\p{Hiragana}|\p{Katakana}|[一-龠々])|\|/ || en_company_name.blank?
-          csv << [row[0], row[1], nil, row[3]]
+          csv << [row[0], nil]
           next
         end
 
-        csv << [row[0], row[1], en_company_name, row[3]]
+        csv << [row[0], en_company_name]
         next
       end
 
@@ -134,7 +139,7 @@ csv_file = CSV.generate(bom, :force_quotes => true) do |csv|
 
         # &nbsp, All Rights Reserved, JSのコードらしきものが含まれる場合は取得しない
         if "#{text}" =~ /\u{C2A0}|\=|;|document./ || "#{text}" =~ /all/i && ("#{text}" =~ /righ(t|ts)/i || "#{text}" =~ /reserved/i)
-          csv << [row[0], row[1], nil, row[3]]
+          csv << [row[0], nil]
           next
         end
 
@@ -142,7 +147,7 @@ csv_file = CSV.generate(bom, :force_quotes => true) do |csv|
         en_company_name = post_match_text
 
         # 年数が記載されている場合
-        years_number = en_company_name.match(/(\d{4}(| |　)(-|–|ー)(| |　)\d{4})|(\d{4}.)|(\d{4})/)
+        years_number = en_company_name.match(/(\d{4}(| |　)(-|–|ー)(| |　)\d{4}.)|(\d{4}(| |　)(-|–|ー)(| |　)\d{4})|(\d{4}.)|(\d{4})/)
         en_company_name = years_number.post_match if years_number
 
         # 会社名を重複して取得している場合
@@ -151,23 +156,23 @@ csv_file = CSV.generate(bom, :force_quotes => true) do |csv|
 
         # 日本語・その他文字が含まれているか確認
         if "#{en_company_name}" =~ /(?:\p{Hiragana}|\p{Katakana}|[一-龠々])|\|/ || en_company_name.blank?
-          csv << [row[0], row[1], nil, row[3]]
+          csv << [row[0], nil]
           next
         end
 
-        csv << [row[0], row[1], en_company_name, row[3]]
+        csv << [row[0], en_company_name]
         next
       end
-      csv << [row[0], row[1], nil, row[3]]
+      csv << [row[0], nil]
     end
     rescue => e
-      p "#{i+1} #{row[1]}"
+      p "#{row[0]}"
       p e
-      csv << [row[0], row[1], nil, row[3]]
+      csv << [row[0], nil]
       next
   end
 end
 
-File.open("test1.csv", "w") do |file|
+File.open("result.csv", "w") do |file|
   file.write(csv_file)
 end
