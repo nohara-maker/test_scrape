@@ -44,7 +44,7 @@ csv_file = CSV.generate(bom, :force_quotes => true) do |csv|
         en_company_name = copyright_mark.post_match if copyright_mark
 
         # (c)が記載されている場合
-        bracket_c_mark = en_company_name.match(/\(c\) |（C）/i)
+        bracket_c_mark = en_company_name.match(/\(c\)|（C）/i)
         en_company_name = bracket_c_mark.post_match if bracket_c_mark
 
         # cが記載されている場合
@@ -118,7 +118,7 @@ csv_file = CSV.generate(bom, :force_quotes => true) do |csv|
         en_company_name = years_number.post_match if years_number
 
         # 会社名を重複して取得している場合
-        bracket_c_mark = en_company_name.match(/\(c\) |（C）/i)
+        bracket_c_mark = en_company_name.match(/\(c\)|（C）/i)
         en_company_name = bracket_c_mark.post_match if bracket_c_mark
 
         # 日本語・その他文字が含まれているか確認
