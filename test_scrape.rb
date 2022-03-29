@@ -52,11 +52,11 @@ csv_file = CSV.generate(bom, :force_quotes => true) do |csv|
         en_company_name = c_mark.post_match if c_mark
 
         # 年数が記載されている場合
-        years_number = en_company_name.match(/(\d{4}(| |　)(-|–|ー)(| |　)\d{4}.)|(\d{4}(| |　)(-|–|ー)(| |　)\d{4})|(\d{4}.)|(\d{4})/)
+        years_number = en_company_name.match(/(20|19|18)..(| |　)(-|–|ー)(| |　)(20|19|18)..(.|)|(20|19)(\d{2})(.|)/)
         en_company_name = years_number.post_match if years_number
 
         # 日本語・その他文字が含まれているか確認
-        if "#{en_company_name}" =~ /(?:\p{Hiragana}|\p{Katakana}|[一-龠々])|\|/ || en_company_name.blank?
+        if "#{en_company_name}" =~ /(?:\p{Hiragana}|\p{Katakana}|[一-龠々])|\||(\d{4})|\"/ || en_company_name.blank? || "#{en_company_name}" =~ /(-|ー)( |　)(.*)|(.*)( |　)(-|ー)/i
           csv << [row[0], nil]
           next
         end
@@ -81,7 +81,7 @@ csv_file = CSV.generate(bom, :force_quotes => true) do |csv|
         en_company_name = post_match_text
 
         # 年数が記載されている場合
-        years_number = en_company_name.match(/(\d{4}(| |　)(-|–|ー)(| |　)\d{4}.)|(\d{4}(| |　)(-|–|ー)(| |　)\d{4})|(\d{4}.)|(\d{4})/)
+        years_number = en_company_name.match(/(20|19|18)..(| |　)(-|–|ー)(| |　)(20|19|18)..(.|)|(20|19)(\d{2})(.|)/)
         en_company_name = years_number.post_match if years_number
 
         # 会社名を重複して取得している場合
@@ -89,7 +89,7 @@ csv_file = CSV.generate(bom, :force_quotes => true) do |csv|
         en_company_name = copyright_mark.pre_match if copyright_mark
 
         # 日本語・その他文字が含まれているか確認
-        if "#{en_company_name}" =~ /(?:\p{Hiragana}|\p{Katakana}|[一-龠々])|\|/ || en_company_name.blank?
+        if "#{en_company_name}" =~ /(?:\p{Hiragana}|\p{Katakana}|[一-龠々])|\||(\d{4})|\"/ || en_company_name.blank? || "#{en_company_name}" =~ /(-|ー)( |　)(.*)|(.*)( |　)(-|ー)/i
           csv << [row[0], nil]
           next
         end
@@ -114,7 +114,7 @@ csv_file = CSV.generate(bom, :force_quotes => true) do |csv|
         en_company_name = post_match_text
 
         # 年数が記載されている場合
-        years_number = en_company_name.match(/(\d{4}(| |　)(-|–|ー)(| |　)\d{4}.)|(\d{4}(| |　)(-|–|ー)(| |　)\d{4})|(\d{4}.)|(\d{4})/)
+        years_number = en_company_name.match(/(20|19|18)..(| |　)(-|–|ー)(| |　)(20|19|18)..(.|)|(20|19)(\d{2})(.|)/)
         en_company_name = years_number.post_match if years_number
 
         # 会社名を重複して取得している場合
@@ -122,7 +122,7 @@ csv_file = CSV.generate(bom, :force_quotes => true) do |csv|
         en_company_name = bracket_c_mark.post_match if bracket_c_mark
 
         # 日本語・その他文字が含まれているか確認
-        if "#{en_company_name}" =~ /(?:\p{Hiragana}|\p{Katakana}|[一-龠々])|\|/ || en_company_name.blank?
+        if "#{en_company_name}" =~ /(?:\p{Hiragana}|\p{Katakana}|[一-龠々])|\||(\d{4})|\"/ || en_company_name.blank? || "#{en_company_name}" =~ /(-|ー)( |　)(.*)|(.*)( |　)(-|ー)/i
           csv << [row[0], nil]
           next
         end
@@ -147,7 +147,7 @@ csv_file = CSV.generate(bom, :force_quotes => true) do |csv|
         en_company_name = post_match_text
 
         # 年数が記載されている場合
-        years_number = en_company_name.match(/(\d{4}(| |　)(-|–|ー)(| |　)\d{4}.)|(\d{4}(| |　)(-|–|ー)(| |　)\d{4})|(\d{4}.)|(\d{4})/)
+        years_number = en_company_name.match(/(20|19|18)..(| |　)(-|–|ー)(| |　)(20|19|18)..(.|)|(20|19)(\d{2})(.|)/)
         en_company_name = years_number.post_match if years_number
 
         # 会社名を重複して取得している場合
@@ -155,7 +155,7 @@ csv_file = CSV.generate(bom, :force_quotes => true) do |csv|
         en_company_name = copyright_text.post_match if copyright_text
 
         # 日本語・その他文字が含まれているか確認
-        if "#{en_company_name}" =~ /(?:\p{Hiragana}|\p{Katakana}|[一-龠々])|\|/ || en_company_name.blank?
+        if "#{en_company_name}" =~ /(?:\p{Hiragana}|\p{Katakana}|[一-龠々])|\||(\d{4})|\"/ || en_company_name.blank? || "#{en_company_name}" =~ /(-|ー)( |　)(.*)|(.*)( |　)(-|ー)/i
           csv << [row[0], nil]
           next
         end
@@ -173,6 +173,6 @@ csv_file = CSV.generate(bom, :force_quotes => true) do |csv|
   end
 end
 
-File.open("result.csv", "w") do |file|
+File.open("result1.csv", "w") do |file|
   file.write(csv_file)
 end
